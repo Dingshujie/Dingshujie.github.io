@@ -1,8 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>test</title>
-    <url>/2022/07/06/test/</url>
-    <content><![CDATA[]]></content>
+    <title>3063-dynamic-resource-allocation-kep</title>
+    <url>/2022/07/06/3063-dynamic-resource-allocation-kep/</url>
+    <content><![CDATA[<h3 id="当前device-plugin方式的局限："><a href="#当前device-plugin方式的局限：" class="headerlink" title="当前device plugin方式的局限："></a>当前device plugin方式的局限：</h3><ol>
+<li>设备初始化：当前device plugin没有想过配置可以指定设置初始化的一些配置，例如FPGA设备可能需要在program启动之前 reconfigured or reprogrammed，当前device plugin是不能指定设备的一些属性的。</li>
+<li>设备cleanup：当前device plugin未提供通用机制在workload介绍时能清理device上的一些数据，或者对设备进行下电操作等。</li>
+<li>部分分配：当前device plugin只支持整数分配，不支持部分分配。举个栗子：新型的GPU有MIG模式，支持把GPU划分为一系列mini-GPU（就是MIG devices）,可以给每个MIG GPU指定不同的memory和计算资源，可以根据应用动态划分MIG device。当前的device plugin机制的话，无法做到动态划分，必须是提前划分好以后，通过device plugin上报给kubelet，kubelet根据提前划分好的MIG device分配给应用。</li>
+<li>optional allocation: 有时对于device的需求是soft，如果device 存在并可分配，则分配，类似gpu或者一些crypto-offload engines，如果他们不可用的话，workloads可以使用CPU做替代。</li>
+<li>fabric devices: 当前device plugin API是给node-local资源设置的，对于一些 network-attached resource来说并没有单个节点的资源限制。</li>
+</ol>
+<h3 id="当前方案流程"><a href="#当前方案流程" class="headerlink" title="当前方案流程"></a>当前方案流程</h3><h4 id="是用persistent-resourceclaim流程"><a href="#是用persistent-resourceclaim流程" class="headerlink" title="是用persistent resourceclaim流程"></a>是用persistent resourceclaim流程</h4><p><img src="/2022/07/06/3063-dynamic-resource-allocation-kep/persistent.jpg"></p>
+<p>使用inline resouceclaim流程</p>
+<p><img src="/2022/07/06/3063-dynamic-resource-allocation-kep/inline.jpg"></p>
+<p>涉及整个调度过程过于复杂。</p>
+]]></content>
+      <categories>
+        <category>kubernetes</category>
+      </categories>
+      <tags>
+        <tag>kubernetes</tag>
+      </tags>
   </entry>
 </search>

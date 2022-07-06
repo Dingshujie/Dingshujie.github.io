@@ -114,6 +114,16 @@
     <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
 
   </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
         <li class="menu-item menu-item-archives">
 
     <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
@@ -173,7 +183,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/07/06/test/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/07/06/3063-dynamic-resource-allocation-kep/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -187,7 +197,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2022/07/06/test/" class="post-title-link" itemprop="url">test</a>
+            <a href="/2022/07/06/3063-dynamic-resource-allocation-kep/" class="post-title-link" itemprop="url">3063-dynamic-resource-allocation-kep</a>
         </h2>
 
         <div class="post-meta">
@@ -196,8 +206,18 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
+              
 
-              <time title="创建时间：2022-07-06 14:07:31" itemprop="dateCreated datePublished" datetime="2022-07-06T14:07:31+08:00">2022-07-06</time>
+              <time title="创建时间：2022-07-06 15:55:06 / 修改时间：16:21:29" itemprop="dateCreated datePublished" datetime="2022-07-06T15:55:06+08:00">2022-07-06</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/kubernetes/" itemprop="url" rel="index"><span itemprop="name">kubernetes</span></a>
+                </span>
             </span>
 
           <br>
@@ -206,7 +226,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>0</span>
+              <span>721</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -225,7 +245,18 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          
+          <h3 id="当前device-plugin方式的局限："><a href="#当前device-plugin方式的局限：" class="headerlink" title="当前device plugin方式的局限："></a>当前device plugin方式的局限：</h3><ol>
+<li>设备初始化：当前device plugin没有想过配置可以指定设置初始化的一些配置，例如FPGA设备可能需要在program启动之前 reconfigured or reprogrammed，当前device plugin是不能指定设备的一些属性的。</li>
+<li>设备cleanup：当前device plugin未提供通用机制在workload介绍时能清理device上的一些数据，或者对设备进行下电操作等。</li>
+<li>部分分配：当前device plugin只支持整数分配，不支持部分分配。举个栗子：新型的GPU有MIG模式，支持把GPU划分为一系列mini-GPU（就是MIG devices）,可以给每个MIG GPU指定不同的memory和计算资源，可以根据应用动态划分MIG device。当前的device plugin机制的话，无法做到动态划分，必须是提前划分好以后，通过device plugin上报给kubelet，kubelet根据提前划分好的MIG device分配给应用。</li>
+<li>optional allocation: 有时对于device的需求是soft，如果device 存在并可分配，则分配，类似gpu或者一些crypto-offload engines，如果他们不可用的话，workloads可以使用CPU做替代。</li>
+<li>fabric devices: 当前device plugin API是给node-local资源设置的，对于一些 network-attached resource来说并没有单个节点的资源限制。</li>
+</ol>
+<h3 id="当前方案流程"><a href="#当前方案流程" class="headerlink" title="当前方案流程"></a>当前方案流程</h3><h4 id="是用persistent-resourceclaim流程"><a href="#是用persistent-resourceclaim流程" class="headerlink" title="是用persistent resourceclaim流程"></a>是用persistent resourceclaim流程</h4><p><img src="/2022/07/06/3063-dynamic-resource-allocation-kep/persistent.jpg"></p>
+<p>使用inline resouceclaim流程</p>
+<p><img src="/2022/07/06/3063-dynamic-resource-allocation-kep/inline.jpg"></p>
+<p>涉及整个调度过程过于复杂。</p>
+
       
     </div>
 
@@ -310,6 +341,16 @@
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
   </nav>
 </div>
 
@@ -345,7 +386,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">0k</span>
+    <span title="站点总字数">1k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
