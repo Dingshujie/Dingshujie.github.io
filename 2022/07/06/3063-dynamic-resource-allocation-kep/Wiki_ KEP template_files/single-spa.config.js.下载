@@ -1,0 +1,258 @@
+let isNotLoadedVisionUI = true;
+let libCss = '/libs/libs.css';
+let visionStyles = [libCss];
+let iviewCss = 'https://static-pod.ajimide.huawei.com/statics/basic/css/iview-2-14-3.min.css';
+let ajCss = "/devops-archimedes-web/css/app.mainf6699d55f444278d9cf7.css";
+let ajStyles = [iviewCss,ajCss];
+let elementUI = 'https://g.fuxi.huawei.com/statics/css/element-ui-2-3-2.css';
+let fuxiStyles = [elementUI];
+
+function insertStyle(styles) {
+  styles.forEach(item=>{
+    var newStyle = document.createElement('link');
+    newStyle.rel = 'stylesheet';
+    newStyle.href = item;
+    document.head.appendChild(newStyle);
+  })
+}
+
+let angularJsLibMounted = false;
+
+function mountAngularJsLib() {
+  if (angularJsLibMounted) {
+    return Promise.resolve();
+  }
+  angularJsLibMounted = true;
+  const url = '/libs/angularjs-libs.js';
+  return Promise.resolve().then(() => {
+    return new Promise((resolve, reject) => {
+      var script = document.createElement('script');
+      script.onload = resolve;
+      script.onerror = reject;
+      script.setAttribute('src', url);
+      document.head.append(script);
+    })
+  })
+}
+
+function registerVisionUI() {
+  System.register([], function (_export) {
+    return {
+      execute: function () {
+        _export(window.singleSpaAngularjs.default({
+          angular: window.angular,
+          domElementGetter: function () {
+            return document.getElementById('vision-webui')
+          },
+          mainAngularModule: 'visionApp',
+          uiRouter: true,
+          preserveGlobal: true,
+        }))
+        console.timeEnd("angularJs开始加载");
+      }
+    }
+  });
+}
+function isBootstrapVisionUI(location) {
+  return !isActive(location, ['conference']) && (location.hash.startsWith('#/') || location.pathname == '/');
+}
+window.singleSpa.registerApplication(
+  'vision',
+  () => {
+    insertStyle(visionStyles);
+    return mountAngularJsLib().then(() => System.import('/app/app.js'));
+  },
+  function activityFunction(location) {
+    if(isNotLoadedVisionUI && isBootstrapVisionUI(location)) {
+      isNotLoadedVisionUI = false;
+      registerVisionUI();
+    }
+    return isBootstrapVisionUI(location);
+  }
+);
+
+function isActive(location, views, isMine, isDomain = true) {
+  var regexp;
+  if (isDomain) {
+    regexp = isMine ? /^\/domains\/\d+\/mine\/(.+?)(?:\/|$)/ : /^\/domains\/\d+\/(.+?)(?:\/|$)/;  
+  } else {
+    regexp = isMine ? /^\/mine\/(.+?)(?:\/|$)/ : /^\/(.+?)(?:\/|$)/;
+  }
+
+  var result = location.pathname.match(regexp);
+  var view = result && result[1];
+  if (views === '*') {
+    return view != null;
+  }
+  return views.includes(view);
+}
+
+// 阿基米德
+window.singleSpa.registerApplication(
+  'devops-archimedes-web',
+  () => Promise.all([
+    System.import('systemjs-amd'),
+    System.import('systemjs-named-exports'),
+    System.import('systemjs-named-register'),
+    System.import('systemjs-use-default'),
+    System.import('collector'),
+    System.import('devops-archimedes-web-env'),
+    insertStyle(ajStyles)
+  ]).then(() => System.import('devops-archimedes-web')),
+  location => {
+    return location.pathname.includes('/archimedes');
+  }
+);
+
+// 伏羲主体
+window.singleSpa.registerApplication(
+  'main',
+  () => Promise.all([
+    insertStyle(fuxiStyles),
+    System.import('systemjs-amd'),
+    System.import('systemjs-named-exports'),
+    System.import('systemjs-named-register'),
+    System.import('systemjs-use-default'),
+    System.import('fuxi-server-config')
+  ]).then(() => System.import('main')),
+  location => {
+    var views = ['debugEnv', 'fossid-account', 'sandboxEnv', 'solo'];
+    var active = (isActive(location, '*', true, false) && !isActive(location, ['codes'], true, false)) || isActive(location, views, false, false);
+    return active;
+  }
+);
+// 伏羲代码模块
+window.singleSpa.registerApplication(
+  'code',
+  () => Promise.all([
+    insertStyle(fuxiStyles),
+    System.import('systemjs-amd'),
+    System.import('systemjs-named-exports'),
+    System.import('systemjs-named-register'),
+    System.import('systemjs-use-default'),
+    System.import('fuxi-server-config')
+  ]).then(() => System.import('code')),
+  location => {
+    var active = isActive(location, ['codes'], true, false)
+    return active;
+  }
+);
+//知识库
+window.singleSpa.registerApplication(
+  'knowledge-ui',
+  () => System.import('knowledge-ui').then(m => {
+    return m.default
+  }),
+  location => {
+    return isActive(location, ['wiki']) || isActive(location, ['eventReport']) || location.pathname.startsWith('/notes') || location.pathname.startsWith('/noteShare') || location.pathname.startsWith('/wiki');
+  }
+);
+//新用户指引
+window.singleSpa.registerApplication(
+  'guidance-ui',
+  () => System.import('guidance-ui').then(m => {
+    return m.default
+  }),
+  location => {
+    return location.pathname.startsWith('/new-user-guidance')
+  }
+);
+// 工作项，工作规划
+window.singleSpa.registerApplication(
+  'vision-workitem',
+  () => System.import('vision-workitem').then(m => {
+    console.timeEnd("angular9开始加载");
+    return m.default
+  }),
+  location => isActive(location, ['workitem','planning','transaction']) || location.pathname.startsWith('/workitem')
+);
+// 全局搜索
+window.singleSpa.registerApplication(
+  'search-ui',
+  ()=>System.import('search-ui').then(m=>{
+    return m.default
+  }),
+  location => {
+    return location.pathname.startsWith('/search') }
+);
+// 发布计划
+window.singleSpa.registerApplication(
+  'vision-release-plan',
+  () => System.import('vision-release-plan').then(m=>{
+    return m.default
+  }),
+  location => isActive(location, ['release_plan'])
+);
+// 敏捷迭代
+window.singleSpa.registerApplication(
+  'vision-iteration',
+  () => System.import('vision-iteration').then(m=>{
+    return m.default
+  }),
+  location => isActive(location, ['iteration'])
+);
+// 漏洞服务
+window.singleSpa.registerApplication(
+  'vulnerability-ui',
+  () => System.import('vulnerability-ui').then(m=>{
+    return m.default
+  }),
+  location => isActive(location, ['vulnerability'])
+);
+// 会议
+window.singleSpa.registerApplication(
+  'conference-ui',
+  () => {
+    insertStyle(visionStyles);
+    return mountAngularJsLib().then(() => System.import('conference-ui').then(m=>{
+      return m.default
+    }))
+  },
+  location => isActive(location, ['conference'])
+);
+// 问题管理
+window.singleSpa.registerApplication(
+  'issue-ui',
+  () => System.import('issue-ui').then(m=>{
+    return m.default
+  }),
+  location => isActive(location, ['coe'])
+);
+// 运营管理
+window.singleSpa.registerApplication(
+  'operation-management-ui',
+  () => System.import('operation-management-ui'),
+  location => isActive(location, ['operation'])
+);
+// 运营管理-外包
+window.singleSpa.registerApplication(
+  'outsourcing-message',
+  () => System.import('outsourcing-message'),// 打包好的子项目文件
+  location => location.pathname.includes("/outsourcing")
+);
+// 配置管理
+window.singleSpa.registerApplication(
+  'configuration-ui',
+  () => System.import('configuration-ui'),
+  location => isActive(location, ['configuration'])
+);
+// 非常重要，不要修改，修改与文林确认
+if(window.authType !== 'w3' || (localStorage.getItem('visionUserInfo') && isLoginTimeValid())) {
+  window.singleSpa.start();
+  console.timeEnd("single-spa加载完成");
+}
+
+function isLoginTimeValid() {
+  if(!localStorage.getItem('visionUserToken')) {
+    return false;
+  }
+  const TOKEN_REFRESH_TIME = 24*60*1000; // 10*1000; // 
+  let lastUpdateTime = localStorage.getItem('_w3_last_update_time');
+  if(lastUpdateTime) {
+      let currentTime = new Date().getTime();
+      if(currentTime - parseInt(lastUpdateTime) < TOKEN_REFRESH_TIME) {
+          return true;
+      }
+  }
+  return false;
+}

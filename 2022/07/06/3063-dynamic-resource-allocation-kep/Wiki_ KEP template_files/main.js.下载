@@ -1,0 +1,267 @@
+var GRAY_CLOUD_SERVICE_CSBI_IDS = 'CS10001442,CS10004927,CS10012997,CS10013149,CCS2019092700072,CCS2020112600106,CS10013216,CCS2021080300015,CCS2020031300014,CS12020198,CCS2021111800007,CS10004201,CS10002218,CS12008648,CS12014545,CCS2020030500004,CS10000006,CS10002034,CS10002035,CCS2021111200003,CS10002038,CCS2019092700071,CCS2019111300113,CCS2020062900024,CCS2019091900060,CCS2020052700011,CS10000010,CCS2021120800013'.split(',');
+var OLD_URL = '';
+
+function ready(fn) {
+	if (document.addEventListener) {
+    //标准浏览器
+		document.addEventListener('DOMContentLoaded', function() {
+			document.removeEventListener('DOMContentLoaded', arguments.callee, false);
+			fn();
+    }, false);
+    
+	} else if (document.attachEvent) {
+    //IE浏览器
+		document.attachEvent('onreadystatechange', function(){
+			if (document.readyState=='complete') {
+				document.detachEvent('onreadystatechange', arguments.callee);
+				fn();
+			}
+		});
+	}
+}
+
+async function mount() {
+  fixOldUrl();
+
+  Object.defineProperty(window, 'isCloudDevops', {
+    value: true,
+    writable: false,
+    configurable: false,
+    enumerable: false
+  });
+
+  console.timeEnd('开始检查灰度');
+  window.isGray = await checkGrayRemote();
+  console.timeEnd('检查是否灰度完成');
+  var host = window.isGray ? '/vision-portal-gray' : '/vision-portal';
+  var navFrameScript = `${host}/nav-frame.js`;
+
+  localStorage.setItem('IS_GRAY', window.isGray);
+  fixIncompatibleUrl(window.isGray);
+
+  Object.defineProperty(window, 'isRNDCloudDevops', {
+    value: true,
+    writable: false,
+    configurable: false,
+    enumerable: false
+  });
+  if (window.isGray) {
+    Object.defineProperty(window, 'isNewCloudDevops', {
+      value: true,
+      writable: false,
+      configurable: false,
+      enumerable: false
+    });
+  }
+  
+  await mountScript(navFrameScript);
+}
+
+function fixOldUrl() {
+  var regexp1 = /domains\/(\d+)\/(mine|solo|fossid-account|debugEnv|sandboxEnv)/;
+  var result1 = location.href.match(regexp1);
+  if (result1) {
+    window.location.assign(location.href.replace(/\/domains\/(\d+)/, ''));
+    return;
+  }
+}
+
+function fixIncompatibleUrl(isGray) {
+  var regexp1 = /product\/domains\/(\d+)\/my-domain/;
+  var regexp2 = /mine\/(?:services|components)\/(\d+)\/workbench/;
+  var result1 = location.href.match(regexp1);
+  var result2 = location.href.match(regexp2);
+  var domainId1 = result1 && result1[1];
+  var domainId2 = result2 && result2[1];
+
+  if (isGray && result1) {
+    window.location.assign(`/mine/services/${domainId1}/workbench`);
+    return;
+  }
+
+  if (!isGray && result2) {
+    window.location.assign(`/#/product/domains/${domainId2}/my-domain`);
+    return;
+  }
+}
+
+async function handleChangeUrl() {
+  const curUrl = getServiceUrl();
+  matchSysUrl();
+  if (OLD_URL === curUrl) {
+    return;
+  }
+  OLD_URL = curUrl;
+  var isGray = await checkGrayRemote();
+  if (isGray !== window.isGray) {
+    window.location.reload();
+  }
+}
+
+async function checkGrayRemote() {
+  if ('true' !== 'true') {
+    return Promise.resolve(false);
+  }
+
+  if (/#\/login/.test(location.href)) {
+    return Promise.resolve(false);
+  }
+
+  var domainId = getDomainId();
+  var serviceId = getServiceId();
+  var cloudServiceCSBIId;
+
+  if (!domainId && !serviceId) {
+    if (isPublicService() || isTodo()) {
+      return Promise.resolve(true);
+    } else if(window.location.pathname.includes('/archimedes/')){
+      return Promise.resolve(localStorage.getItem('IS_GRAY') === 'true');
+    } else {
+      return Promise.resolve(false);
+    }
+  }
+  try {
+    if (domainId) {
+      return await checkGrayByDomainId(domainId);
+    } else if (serviceId) {
+        cloudServiceCSBIId = await getCloudServiceByServiceId(serviceId);
+    }
+  } catch (_) {
+    return localStorage.getItem('IS_GRAY') === 'true';
+  }
+  
+  return GRAY_CLOUD_SERVICE_CSBI_IDS.includes(cloudServiceCSBIId);
+}
+
+function checkGrayByDomainId(domainId) {
+  return new Promise(function (resolve, reject) {
+    const subscriber = window.communicationService.tokenGotten$.subscribe((token) => {
+      if (!token) {
+        return;
+      }
+      setTimeout(() => {
+        subscriber.unsubscribe();
+      });
+      $.ajax({
+        url: `/vision-platform/api/gray/control?resource=clouddevops:gray&domainId=${domainId}`,
+        headers: { Authorization: localStorage.getItem('visionUserToken')},
+        method: 'GET',
+        success: function (res) {
+          if (res.code === 200) {
+            resolve(res.data);
+            return;
+          }
+          resolve(false);
+        },
+        error: function (error) {
+          reject(error);
+        }
+      })
+    })
+  })
+}
+
+function getCloudServiceByServiceId(serviceId) {
+  return new Promise(function (resolve, reject) {
+      var host = getFuxiHost();
+      $.ajax({
+          url: `${host}/appserv/api/v1/service/csbi/cloud_service_info?appId=${serviceId}`,
+          headers: { Authorization: localStorage.getItem('userToken') },
+          method: 'GET',
+          success: function(resp) {
+              var data = resp.data || [];
+              var service = data[0] || {};
+              var uuid = service.sn;
+              resolve(uuid);
+          },
+          error: function(error) {
+              reject(error);
+          }
+      })
+  });
+}
+
+function getFuxiHost() {
+  return location.host.includes('.huawei.com') ? 'https://g.fuxi.huawei.com' : 'https://beta.fuxi.huawei.com';
+}
+
+function mountScript(url) {
+  if (!window.loadScripts) {
+      window.loadScripts = {};
+  }
+  if (window.loadScripts[url]) return Promise.resolve();
+
+  return new Promise(function(resolve, reject) {
+      var script = document.createElement('script');
+      script.onload = resolve;
+      script.onerror = reject;
+      script.setAttribute('src', url);
+      document.body.append(script);
+      loadScripts[url] = true;
+  });
+}
+
+function getDomainId() {
+  let regexp1 = /domains\/(\d+)\//;
+  let regexp2 = /mine\/services\/(\d+)\/workbench/;
+  let result1 = location.href.match(regexp1);
+  let result2 = location.href.match(regexp2);
+  let domain_id = (result1 && result1[1]) || (result2 && result2[1]);
+  return Number(domain_id);
+}
+
+function getServiceId() {
+  let regexp1 = /mine\/(?:services|specialServices|components)\/(\d+)\//;
+  let regexp2 = /mine\/codes/;
+  let result1 = location.href.match(regexp1);
+  let result2 = regexp2.test(location.href) ? parse(location.search.slice(1)) : {};
+  let serviceId1 = result1 && result1[1];
+  let serviceId2 = result2.sid;
+  return Number(serviceId1 || serviceId2);
+}
+
+function isPublicService() {
+  let regexp = /mine\/public-services/;
+  return regexp.test(location.href);
+}
+
+function isTodo() {
+  let regexp = /mine\/todo/;
+  return regexp.test(location.href);
+}
+
+function parse(queryStr) {
+  if (!queryStr) return {};
+  var query = {};
+  var tokens = queryStr.split('&');
+  tokens.forEach(token => {
+      var [key, value]  = token.split('=');
+      query[key] = value;
+  });
+  return query;
+}
+
+// hash路由监听
+function matchSysUrl() {
+  const evt = new Event('match-sys-url', {'bubbles': true, 'cancelable': false});
+  evt.message = location.hash || location.pathname;
+  document.dispatchEvent(evt);
+}
+
+/**
+* 通过比对 CURRENT_URL 与 OLD_URL的值，判断是否需要做灰度校验；
+* hash路由: #/xxx/xxx/xxx...
+* history路由: /xxx/xxx/xxx...
+*/
+function getServiceUrl() {
+  const url = window.location.hash || window.location.pathname;
+  return url.split('/').slice(1, 4).join('');
+}
+
+ready(function() {
+  console.timeEnd("main.js开始执行");
+  mount();
+  OLD_URL = getServiceUrl();
+  window.addEventListener('hashchange', handleChangeUrl);
+  window.addEventListener('popstate', handleChangeUrl, false);
+});

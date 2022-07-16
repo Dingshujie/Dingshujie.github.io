@@ -1,0 +1,70 @@
+window.SystemJs = window.System;
+
+function insertNewImportMap(newMapJSON) {
+  var newScript = document.createElement('script');
+  newScript.type = 'systemjs-importmap';
+  newScript.text = JSON.stringify(newMapJSON);
+  document.head.appendChild(newScript);
+}
+
+var v = new Date().getTime();
+var isPro = window.location.hostname.includes('.huawei.com');
+var origin = isPro ? 'https://g.fuxi.huawei.com' : 'https://beta.fuxi.huawei.com';
+var main = isPro ? '/fuxi-front-app/obs/fuxi_main_last/app.' + v + '.js' : '/fuxi-front-app/main/fuxi_last/app.' + v + '.js';
+var code = isPro ? '/fuxi-front-app/obs/fuxi_code_last/app.' + v + '.js' : '/fuxi-front-app/code/fuxi_last/app.' + v + '.js';
+var serverConfig = "/fuxi-server-config/clouddevops.js?v=" + v;
+
+var dependencies = {
+  imports: {
+    "main": origin + main,
+    "code": origin + code,
+    "fuxi-server-config": origin + serverConfig,
+    "single-spa": "https://g.fuxi.huawei.com/statics/js/entry/single-spa/4.3.7/single-spa.min.js",
+    "systemjs-amd": "https://g.fuxi.huawei.com/statics/js/entry/systemjs/6.1.1/extras/amd.min.js",
+    "systemjs-named-exports": "https://g.fuxi.huawei.com/statics/js/entry/systemjs/6.1.1/extras/named-exports.js",
+    "systemjs-named-register": "https://g.fuxi.huawei.com/statics/js/entry/systemjs/6.1.1/extras/named-register.min.js",
+    "systemjs-use-default": "https://g.fuxi.huawei.com/statics/js/entry/systemjs/6.1.1/extras/use-default.min.js",
+    "vue": "https://g.fuxi.huawei.com/statics/js/vue-2-5-13.min.js",
+    "Vue": "https://static-pod.ajimide.huawei.com/statics/basic/js/vue-2-5-17.min.js",
+    "Vuex": "https://static-pod.ajimide.huawei.com/statics/basic/js/vuex-3-1-1.min.js",
+    "vue-router": "https://g.fuxi.huawei.com/statics/js/vue-router-2-8-1.min.js",
+    "VueI18n":"https://static-pod.ajimide.huawei.com/statics/basic/js/vue-i18n-7-8-1.min.js",
+    'ELEMENT':'https://static-pod.ajimide.huawei.com/statics/basic/js/element-ui-2-4-11.min.js',
+    "iview": "https://static-pod.ajimide.huawei.com/statics/basic/js/iview-2-14-3.min.js",
+    "e-charts":"https://static-pod.ajimide.huawei.com/statics/basic/js/echarts-4-1-0.min.js",
+    "moment": "https://static-pod.ajimide.huawei.com/statics/basic/js/moment.min.js",
+    "lodash": "https://static-pod.ajimide.huawei.com/statics/basic/js/lodash.min.js",
+    "axios": "https://g.fuxi.huawei.com/statics/js/axios-0-17-1.min.js",
+    "collector":"https://static-pod.ajimide.huawei.com/statics/basic/js/aj-collector-devops-1.0.2.js",
+    "element-ui": "https://g.fuxi.huawei.com/statics/js/element-ui-2-3-2.min.js",
+    "vue-i18n": "https://g.fuxi.huawei.com/statics/js/vue-i18n-7-4-2.min.js",
+    "jquery": "https://g.fuxi.huawei.com/statics/js/jquery.min.js",
+    "echarts": "https://g.fuxi.huawei.com/statics/js/echarts-3-8-15.min.js",
+    "vision": "/app/app.js",
+    "knowledge-ui":"/knowledge-ui/main.js",
+    "vision-knowledge-ce":"/knowledge-ui/main.ce.js",
+    "guidance-ui":"/guidance-ui/main.js",
+    "search-ui":"/search-ui/main.js",
+    "vision-workitem": "/workitem-ui/main.js",
+    "vision-release-plan":'/release-plan-ui/main.js',
+    "vision-iteration":"/iteration-ui/main.js",
+    "vision-iteration-ce":"/iteration-ui/main.ce.js",
+    "vision-workitem-ce": "/workitem-ui/main.ce.js",
+    "vision-search-ce":'/search-ui/main.ce.js',
+    'vulnerability-ui': '/vulnerability-ui/main.js',
+    'conference-ui': '/conference-ui/js/app.js',
+    'conference-ui-ce': '/conference-ui/js/app-ce.js',
+    "vision-shared-ce":'/shared-ui/main.ce.js',
+    "operation-management-ui": "/operation-management-ui/js/app.js",
+    'configuration-ui': '/configuration-ui/js/app.js',
+    "devops-archimedes-web": "/devops-archimedes-web/main.f6699d55f444278d9cf7.js",
+    "devops-archimedes-web-env": "/devops-archimedes-web/env.f6699d55f444278d9cf7.js",
+    "outsourcing-message":"https://metadata.ajimide.huawei.com/outsourcing-message/js/app.js",
+    "sketchpad":'/sketchpad-ui/js/app.js',
+    "sketchpad-chunk":'/sketchpad-ui/js/chunk-vendors.js',
+    'issue-ui': '/issue-ui/js/app.js',
+    'issue-ui-ce': '/issue-ui/js/app-ce.js',
+  }
+};
+
+insertNewImportMap(dependencies);
