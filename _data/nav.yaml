@@ -1,0 +1,4 @@
+- title: kubernetes
+  url: category/kubernetes.html
+  icon: assets/img/icons/kubernetes.png
+  hue: "var(--c-themeHueBlue)"
