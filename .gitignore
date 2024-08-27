@@ -3,6 +3,9 @@
 vendor
 Gemfile.lock
 
+# excalidraw.md 
+*.excalidraw.md
+
 # Jekyll cache
 .jekyll-cache
 .jekyll-metadata
@@ -22,3 +25,17 @@ package-lock.json
 !.vscode/extensions.json
 
 # Misc
+
+_posts/Drawing 2024-08-26 19.34.29.excalidraw.md
+_posts/Drawing 2024-08-26 19.34.29.excalidraw.md
+_posts/Drawing 2024-08-26 19.34.29.excalidraw.md
+_posts/Drawing 2024-08-27 10.03.56.excalidraw.md
+_posts/Drawing 2024-08-27 10.03.56.excalidraw.md
+_posts/Drawing 2024-08-27 10.03.56.excalidraw.md
+_posts/Drawing 2024-08-27 10.03.56.excalidraw.md
+_posts/Drawing 2024-08-27 10.03.56.excalidraw.md
+_posts/Drawing 2024-08-27 10.03.56.excalidraw.md
+_posts/Drawing 2024-08-27 10.03.56.excalidraw.md
+_posts/Drawing 2024-08-27 10.03.56.excalidraw.md
+_posts/Drawing 2024-08-27 10.03.56.excalidraw.md
+_posts/Drawing 2024-08-27 10.03.56.excalidraw.md
