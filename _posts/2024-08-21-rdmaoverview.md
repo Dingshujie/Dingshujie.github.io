@@ -8,7 +8,7 @@ tags:
 ---
 当前AI训练中，由于大量的数据发送，使用传统的网络协议的网络包发送都需要通过内核进行发送，就会涉及到数据层从用户态和内核态拷贝，在大模型训练以及推理场景下，可能需要在gpu/npu之间有大量的数据的传输，这样涉及在发送和接收端的大量的内存拷贝，导致收发端大量的资源消耗以及处理延迟。可能有些人不大熟悉网络收发的流程，那先来介绍下linux中网络收发包的流程．
 ### 网络收发
-![network](img/Linuxsendrecv.png)
+![network](../assets/img/Linuxsendrecv.png)
 那么从上图看到，左边的tasks要发送一个包的时候，有以下几个流程：
 1. 进程调用send系统调用发送数据，系统调用中会申请一个skb，将用户待发送的数据拷贝到skb中，经过协议栈处理放入到发送队列ringbuffer中
 2. 网卡驱动从发送队列ringbuffer中获取skb，发送到数据包，这个时候占用的是用户进程的系统态时间（sy），只有当用户进程的时间quota用完后，或者其他进程需要cpu时，会触发软中断进行发送。这里的软中断类型为NET_TX。发送完成后会通过硬中断来通知cpu已经发送完成，其实这里有个特别的，这里发送的硬中断类型是Net_RX_SOFTIRQ,这里也是为什么我们通过服务器上/proc/softiqrs里为什么NET_RX比NET_TX多很多的原因。
@@ -21,7 +21,7 @@ tags:
 那为了减少传送数据的资源消耗以及处理时延，一般都会使用RDMA（Remote Direct Memory Access）。可能有些人没有了解过DMA，对于RDMA为什么能解决问题也是一知半解，所以接下来新介绍DMA
 #### DMA
 DMA是一种数据传输方式，他提供了为存储设备与外部设备之间提供了一种不经过cpu干预的数据传输方式，这样可以提升系统性能，使CPU专心处理一起更重要的计算任务。那通过外设到存储器的数据传输来简单看一下DMA数据传输的流程
-![dma](img/DMA.png)
+![dma](../assets/img/DMA.png)
 整体的数据传输通过DMA Controller来控制，当外部设备想传输数据到一块内存，
 1. 首先外部设备发送DMA request到DMA Controller，DMA Controller会根据DMA通道的优先级来处理请求
 2. 当DMA Controller响应传输请求时会向控制总线发起总线控制请求，暂停CPU访问，获取系统总线控制权，当获取总线控制权后，数据流通道被开启，数据通道可以访问AHB源和目的端口
@@ -35,12 +35,12 @@ RDMA有以下几个特点：
 - cpu offload:应用程序可以不需要远端服务器参与，读取远端服务器主机内存。
 - Kernel bypass: rdma提供专有interface，应用程度可以在用户态执行数据传输，不需要在哪喝态与用户态做上下文切换
 - Zero copy:数据能直接发送到缓冲区或者从缓冲区读取，需要要被复制到网络层。
-![rdma-infra](img/rdma-infra.png)
+![rdma-infra](../assets/img/rdma-infra.png)
 引用下往上很多blog里都用的图，用户程序例如大模型训练框架等通过verbs接口操作RDMA NIC，其中有两种基本的verb：
 - Memory verb: 主要是RDMA read/write,调用者指定远程/本机虚拟地址，进行远程虚拟机的读写。但是与Message verbs不同的是远程主机是不会意识到操作正在执行，但是在使用该verb前需要提前注册Memory Region，一个是可以注册VA到PA的地址转换到RNIC的Cached PTEs。这样数据需要发送/收取时，Host Channel Adatpter通过查询Cached PTEs来获取PA，读取数据或者将写入的数据写入到对应的地址。同时注册Memory Region，会产生两把密钥，r_key（remote key）和l_key（local key），用于保障对于本端和远端内存区域的访问权限。
 - Message verb:主要是send/recevive，被称为双端操作，与memory verb的最大区别在于需要双方的cpu参与，主要用户两端交换控制信息，比如说上诉Memory VA以及key，大量的数据操作还是通过RDMA read/write完成。发送端和接收端都要给过Work Request来通知硬件接收和发送的地址在哪里。
 那接下来我们通过一个RDMA的Write来大概描述下整个通信过程，如下图所示：
-![write](img/rdma-write.png)
+![write](../assets/img/rdma-write.png)
 RDMA-Write如前文所述，需要应用提前准备虚拟地址,比如接收方要自己准备数据写入地址，同也需要注册MemoryRegion，提前注册RNIC相关的VA->PA的转换表以及相应写入权限key，避免远端写入一些非期望地址
 ##### 准备阶段
 - 发送端会向WorkQueue中插入一个MemoryRegionEntry，HCA会获取队列中的Work Request，注册MemoryRegion，获取VA->PA的地址转换表，并生成r_key,l_key供后续使用。同样接收端也会做响应事情，会准备写入的地址，然后同时注册MemoryRegion。
